@@ -24,7 +24,7 @@
       const candy = store.getCandy(candyId);
       if (!candy) return;
       const image = document.createElement("img");
-      image.src = candy.image;
+      image.src = item.mode === "percent" ? candy.boxImage || candy.image : candy.image;
       image.alt = "";
       image.width = 60;
       image.height = 60;
@@ -47,10 +47,14 @@
 
     if (item.type === "mix") {
       art.append(createMixArt(item));
-      title.textContent = `${item.name}, ${item.capacity} шт.`;
-      meta.textContent = `${item.weight} г · ${item.package === "gift" ? "подарочный бокс" : "крафт-пакет"}`;
-      composition.textContent = Object.entries(item.items).map(([candyId, quantity]) => {
-        return `${store.getCandy(candyId)?.name || candyId} — ${quantity} шт.`;
+      const isPercent = item.mode === "percent";
+      const size = isPercent ? `${item.weight} г` : `${item.capacity} шт.`;
+      const packing = item.package === "gift" ? "подарочный бокс" : "крафт-пакет";
+      title.textContent = `${item.name}, ${size}`;
+      meta.textContent = `${isPercent ? "Микс по процентам" : `${item.weight} г`} · ${packing}`;
+      composition.textContent = Object.entries(item.items).map(([candyId, amount]) => {
+        const unit = isPercent ? "%" : " шт.";
+        return `${store.getCandy(candyId)?.name || candyId} — ${amount}${unit}`;
       }).join(", ");
     } else {
       const set = store.getSet(item.setId);
