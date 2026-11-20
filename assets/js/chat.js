@@ -3,6 +3,7 @@
   const launch = document.createElement("button");
   launch.className = "chat-launch";
   launch.type = "button";
+  launch.setAttribute("aria-label", "Чат с консультантом");
   launch.setAttribute("aria-expanded", "false");
   launch.setAttribute("aria-controls", "consultant-chat");
   launch.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a3 3 0 0 1-3 3H9l-5 3v-6a3 3 0 0 1-1-2.3V7a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3z"/></svg><span>Чат с консультантом</span><i aria-hidden="true"></i>`;
@@ -68,7 +69,7 @@
   function getResponse(question) {
     const text = question.toLocaleLowerCase("ru");
     if (text.includes("достав")) return "По Москве доставка стоит 350 ₽, а от 2 500 ₽ — бесплатно. Также можно забрать заказ самовывозом из лавки на Никольской, 10.";
-    if (text.includes("микс") || text.includes("собра")) return "В конструкторе выберите бокс на 12, 24 или 36 конфет и добавляйте вкусы кнопками +. Можно взять сколько угодно конфет одного вида. Когда все ячейки будут заполнены, микс можно добавить в корзину.";
+    if (text.includes("микс") || text.includes("собра")) return "Выберите «Поштучно» для бокса на 12, 24 или 36 конфет или «По процентам» для бокса на 250, 500 или 750 г. Добавляйте любимые вкусы кнопкой «Добавить» и положите заполненный бокс в корзину.";
     if (text.includes("подар")) return "Для подарка советую набор «Ягодная вечеринка» или нежный микс без кислого. В конструкторе можно выбрать подарочный бокс за 199 ₽.";
     if (text.includes("кисл")) return "Для яркой кислоты выберите «Кислый удар» или добавьте в микс Тентакли, Червевидных Олегов и Синяки.";
     if (text.includes("цен") || text.includes("стоим") || text.includes("сколько")) return "Готовые наборы по 250 г стоят от 490 ₽. В своём миксе цена складывается из выбранных конфет — она сразу отображается в конструкторе.";

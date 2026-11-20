@@ -2,361 +2,471 @@
   const data = window.CANDY_DATA;
   const store = window.CandyStore;
   const storageKey = "sweet-bag-mix-v1";
-  const grid = document.querySelector("#candy-grid");
-  const cells = document.querySelector("[data-mix-cells]");
-  const dropzone = document.querySelector("[data-mix-dropzone]");
-  const addButton = document.querySelector("[data-mix-add]");
-  const filterButtons = [...document.querySelectorAll("[data-mix-filter]")];
-  const capacityButtons = [...document.querySelectorAll("[data-capacity]")];
-  const search = document.querySelector("[data-candy-search]");
-  const empty = document.querySelector("[data-candy-empty]");
+  const capacities = [12, 24, 36];
+  const weights = data.sizes.map((size) => size.weight);
+  const percentageStep = 5;
+  const byId = new Map(data.candies.map((candy) => [candy.id, candy]));
+  const find = (selector) => document.querySelector(selector);
+  const findAll = (selector) => [...document.querySelectorAll(selector)];
+  const grid = find("#candy-grid");
+  const cells = find("[data-mix-cells]");
+  const box = find("[data-mix-dropzone]");
+  const tray = find("#mix-tray");
+  const boxToggle = find("[data-box-toggle]");
+  const addButton = find("[data-mix-add]");
+  const resetButton = find("[data-mix-reset]");
+  const randomButton = find("[data-mix-random]");
+  const balanceButton = find("[data-mix-balance]");
+  const search = find("[data-candy-search]");
+  const empty = find("[data-candy-empty]");
+  const selection = find("[data-candy-selection]");
+  const controls = find("[data-candy-controls]");
+  const selectedImage = find("[data-selected-image]");
+  const selectedName = find("[data-selected-name]");
+  const selectedFlavor = find("[data-selected-flavor]");
+  const percentInput = find("[data-candy-percent]");
+  const pieceCount = find("[data-candy-count]");
+  const plus = find("[data-candy-plus]");
+  const minus = find("[data-candy-minus]");
+  const modes = findAll("[data-mix-mode]");
+  const capacityButtons = findAll("[data-capacity]");
+  const weightButtons = findAll("[data-weight]");
+  const filterButtons = findAll("[data-mix-filter]");
+  const state = loadState();
   let activeFilter = "all";
-  let searchQuery = "";
-  let state = loadState();
+  let selectedId = null;
+  let isOpen = true;
+
+  function loadSelections(saved, limit, availableOnly = false) {
+    const selections = {};
+    for (const [id, value] of Object.entries(saved || {})) {
+      const candy = byId.get(id);
+      const quantity = Math.floor(Number(value));
+      if (candy && (!availableOnly || candy.isAvailable) && quantity > 0 && quantity <= limit) {
+        selections[id] = quantity;
+      }
+    }
+    return sum(selections) <= limit ? selections : {};
+  }
 
   function loadState() {
-    const fallback = { capacity: 12, package: "craft", selections: {} };
+    let saved;
     try {
-      const saved = JSON.parse(localStorage.getItem(storageKey));
-      if (!saved || ![12, 24, 36].includes(saved.capacity)) return fallback;
-      const selections = {};
-      data.candies.forEach((candy) => {
-        const quantity = Math.max(0, Math.floor(Number(saved.selections?.[candy.id]) || 0));
-        if (quantity) selections[candy.id] = quantity;
-      });
-      const total = Object.values(selections).reduce((sum, quantity) => sum + quantity, 0);
-      if (total > saved.capacity) return fallback;
-      return {
-        capacity: saved.capacity,
-        package: saved.package === "gift" ? "gift" : "craft",
-        selections,
-      };
-    } catch (error) {
-      return fallback;
+      saved = JSON.parse(localStorage.getItem(storageKey));
+    } catch {
+      saved = null;
     }
+    const capacity = capacities.includes(saved?.capacity) ? saved.capacity : capacities[0];
+    return {
+      mode: saved?.mode === "percent" ? "percent" : "pieces",
+      capacity,
+      weight: weights.includes(saved?.weight) ? saved.weight : weights[0],
+      package: saved?.package === "gift" ? "gift" : "craft",
+      selections: loadSelections(saved?.selections, capacity),
+      shares: loadSelections(saved?.shares, 100, true),
+    };
   }
 
   function saveState() {
     try {
       localStorage.setItem(storageKey, JSON.stringify(state));
-    } catch (error) {
+    } catch {
       store.notify("Браузер не разрешил сохранить микс.");
     }
   }
 
-  function getTotal() {
-    return Object.values(state.selections).reduce((sum, quantity) => sum + quantity, 0);
+  function sum(quantities) {
+    return Object.values(quantities).reduce((total, quantity) => total + quantity, 0);
   }
 
-  function getWeight() {
-    return data.candies.reduce((sum, candy) => {
-      return sum + candy.weight * (state.selections[candy.id] || 0);
-    }, 0);
+  function currentMix() {
+    return state.mode === "percent" ? state.shares : state.selections;
   }
 
-  function getPrice() {
-    const candiesPrice = data.candies.reduce((sum, candy) => {
-      return sum + candy.price * (state.selections[candy.id] || 0);
-    }, 0);
-    return candiesPrice + (state.package === "gift" ? 199 : 0);
+  function limit() {
+    return state.mode === "percent" ? 100 : state.capacity;
   }
 
-  function createCandyCard(candy) {
-    const card = document.createElement("article");
-    card.className = "candy-card";
-    card.dataset.candyCard = candy.id;
-    card.classList.toggle("candy-card--unavailable", !candy.isAvailable);
-    const imageBox = document.createElement("button");
-    imageBox.className = "candy-card__image";
-    imageBox.type = "button";
-    imageBox.draggable = candy.isAvailable;
-    imageBox.dataset.candyDrag = candy.id;
-    imageBox.setAttribute("aria-label", `Описание, состав и КБЖУ: ${candy.name}. Можно перетащить в коробку.`);
+  function step() {
+    return state.mode === "percent" ? percentageStep : 1;
+  }
+
+  function formatAmount(value) {
+    return state.mode === "percent" ? `${value}%` : `${value} шт.`;
+  }
+
+  function getTotals() {
+    const isPercent = state.mode === "percent";
+    let weight = 0;
+    let price = state.package === "gift" ? 199 : 0;
+    for (const [id, amount] of Object.entries(currentMix())) {
+      const candy = byId.get(id);
+      const grams = isPercent ? state.weight * amount / 100 : candy.weight * amount;
+      weight += grams;
+      price += grams * candy.price / candy.weight;
+    }
+    return { weight: Math.round(weight), price: Math.round(price) };
+  }
+
+  function createFlavor(candy) {
+    const button = document.createElement("button");
+    button.className = "builder-flavor";
+    button.type = "button";
+    button.dataset.candy = candy.id;
+    button.draggable = candy.isAvailable;
+    button.title = candy.name;
+    button.setAttribute("aria-label", candy.name);
+    button.classList.toggle("builder-flavor--unavailable", !candy.isAvailable);
     const image = document.createElement("img");
     image.src = candy.image;
-    image.alt = candy.name;
-    image.width = 180;
-    image.height = 180;
+    image.alt = "";
+    image.width = 72;
+    image.height = 72;
     image.loading = "lazy";
     image.draggable = false;
-    const count = document.createElement("span");
-    count.className = "candy-card__count";
-    count.dataset.candyBadge = candy.id;
-    imageBox.append(image, count);
-    if (!candy.isAvailable) {
-      const unavailable = document.createElement("span");
-      unavailable.className = "candy-card__unavailable";
-      unavailable.textContent = "Нет в наличии";
-      imageBox.append(unavailable);
-    }
-
-    const body = document.createElement("div");
-    body.className = "candy-card__body";
-    const title = document.createElement("h3");
-    title.textContent = candy.name;
-    const flavor = document.createElement("p");
-    flavor.className = "candy-card__flavor";
-    flavor.textContent = candy.flavor;
-    const details = document.createElement("button");
-    details.className = "candy-card__details";
-    details.type = "button";
-    details.textContent = "Вкус, состав и КБЖУ →";
-    details.setAttribute("aria-label", `Подробнее о конфете «${candy.name}»`);
-    const bottom = document.createElement("div");
-    bottom.className = "candy-card__bottom";
-    const price = document.createElement("strong");
-    price.className = "candy-card__price";
-    price.textContent = `${store.formatPrice(candy.price)} `;
-    const unit = document.createElement("small");
-    unit.textContent = "/ шт.";
-    price.append(unit);
-
-    const quantity = document.createElement("div");
-    quantity.className = "quantity";
-    const minus = document.createElement("button");
-    minus.type = "button";
-    minus.textContent = "−";
-    minus.dataset.candyMinus = candy.id;
-    minus.setAttribute("aria-label", `Убрать одну конфету «${candy.name}»`);
-    const value = document.createElement("span");
-    value.dataset.candyQuantity = candy.id;
-    const plus = document.createElement("button");
-    plus.type = "button";
-    plus.textContent = "+";
-    plus.dataset.candyPlus = candy.id;
-    plus.setAttribute("aria-label", `Добавить одну конфету «${candy.name}»`);
-    quantity.append(minus, value, plus);
-    bottom.append(price, quantity);
-    body.append(title, flavor, details, bottom);
-    card.append(imageBox, body);
-    return card;
+    const badge = document.createElement("span");
+    badge.className = "builder-flavor__badge";
+    button.append(image, badge);
+    return button;
   }
 
-  function renderCandyCards() {
+  function renderCatalog() {
+    const query = search.value.trim().toLocaleLowerCase("ru");
     const filtered = data.candies.filter((candy) => {
       const matchesCategory = activeFilter === "all" || candy.categories.includes(activeFilter);
-      const query = searchQuery.trim().toLocaleLowerCase("ru");
-      const matchesSearch = !query || `${candy.name} ${candy.flavor}`.toLocaleLowerCase("ru").includes(query);
-      return matchesCategory && matchesSearch;
+      return matchesCategory && `${candy.name} ${candy.flavor}`.toLocaleLowerCase("ru").includes(query);
     });
-    grid.replaceChildren();
-    filtered.forEach((candy) => grid.append(createCandyCard(candy)));
+    if (!filtered.some((candy) => candy.id === selectedId)) {
+      selectedId = (filtered.find((candy) => candy.isAvailable) || filtered[0])?.id ?? null;
+    }
+    grid.replaceChildren(...filtered.map(createFlavor));
+    grid.scrollTop = 0;
+    grid.hidden = filtered.length === 0;
     empty.hidden = filtered.length > 0;
-    document.querySelector("[data-candy-results]").textContent = `${filtered.length} ${filtered.length === 1 ? "вкус" : filtered.length < 5 ? "вкуса" : "вкусов"}`;
-    updateCandyControls();
+    const count = filtered.length;
+    const last = count % 10;
+    const plural = count % 100 >= 11 && count % 100 <= 14 || last === 0 || last >= 5
+      ? "вкусов" : last === 1 ? "вкус" : "вкуса";
+    find("[data-candy-results]").textContent = `${count} ${plural}`;
+    renderSelection();
   }
 
-  function updateCandyControls() {
-    const total = getTotal();
-    data.candies.forEach((candy) => {
-      const quantity = state.selections[candy.id] || 0;
-      const card = grid.querySelector(`[data-candy-card="${candy.id}"]`);
-      if (!card) return;
-      card.classList.toggle("candy-card--selected", quantity > 0);
-      card.querySelector(`[data-candy-quantity="${candy.id}"]`).textContent = quantity;
-      const badge = card.querySelector(`[data-candy-badge="${candy.id}"]`);
-      badge.textContent = quantity;
-      badge.hidden = quantity === 0;
-      card.querySelector(`[data-candy-minus="${candy.id}"]`).disabled = quantity === 0;
-      card.querySelector(`[data-candy-plus="${candy.id}"]`).disabled = total >= state.capacity || !candy.isAvailable;
-    });
-  }
-
-  function changeCandy(candyId, delta) {
-    const candy = store.getCandy(candyId);
+  function renderSelection() {
+    const mix = currentMix();
+    const candy = byId.get(selectedId);
+    const isPercent = state.mode === "percent";
+    for (const button of grid.children) {
+      const amount = mix[button.dataset.candy] || 0;
+      button.setAttribute("aria-pressed", String(button.dataset.candy === selectedId));
+      button.setAttribute("aria-label", amount ? `${byId.get(button.dataset.candy).name}, ${formatAmount(amount)}` : byId.get(button.dataset.candy).name);
+      const badge = button.lastElementChild;
+      badge.hidden = amount === 0;
+      badge.textContent = isPercent ? formatAmount(amount) : amount;
+    }
+    selection.hidden = controls.hidden = !candy;
     if (!candy) return;
-    if (delta > 0 && !candy.isAvailable) {
-      store.notify("Этого вкуса сейчас нет в наличии. Выбери другой.");
-      return;
+
+    if (selectedImage.getAttribute("src") !== candy.image) selectedImage.src = candy.image;
+    selectedName.textContent = candy.name;
+    selectedFlavor.textContent = candy.isAvailable ? candy.flavor : "Нет в наличии";
+    const amount = mix[selectedId] || 0;
+    const remaining = limit() - sum(mix);
+    const addAmount = Math.min(step(), remaining) || step();
+    plus.disabled = !candy.isAvailable || remaining === 0;
+    plus.textContent = `Добавить +${addAmount}${isPercent ? "%" : ""}`;
+    minus.disabled = amount === 0;
+    minus.setAttribute("aria-label", `Убрать ${formatAmount(Math.min(step(), amount) || step())} — ${candy.name}`);
+    pieceCount.textContent = amount;
+    pieceCount.hidden = isPercent;
+    percentInput.parentElement.hidden = !isPercent;
+    percentInput.disabled = !candy.isAvailable;
+    percentInput.max = amount + remaining;
+    if (document.activeElement !== percentInput) percentInput.value = amount;
+  }
+
+  function setAmount(id, amount) {
+    const candy = byId.get(id);
+    if (!candy || !Number.isFinite(amount)) return;
+    const mix = currentMix();
+    const existing = mix[id] || 0;
+    if (amount > existing && !candy.isAvailable) return;
+    const max = limit() - sum(mix) + existing;
+    const next = Math.min(max, Math.max(0, Math.round(amount)));
+    if (next) mix[id] = next;
+    else delete mix[id];
+    refresh();
+  }
+
+  function changeCandy(id, delta) {
+    setAmount(id, (currentMix()[id] || 0) + delta);
+  }
+
+  function createCell(id, amount, isPercent) {
+    const candy = byId.get(id);
+    const cell = document.createElement(candy ? "button" : "div");
+    cell.className = "builder-cell";
+    if (candy) {
+      cell.type = "button";
+      cell.dataset.cellCandy = candy.id;
+      cell.title = `${candy.name} · убрать ${formatAmount(Math.min(step(), amount))}`;
+      cell.setAttribute("aria-label", isPercent ? `${formatAmount(amount)}. ${cell.title}` : cell.title);
+      const art = document.createElement("span");
+      art.className = "builder-cell__art";
+      if (isPercent && candy.boxImage) {
+        art.classList.add("builder-cell__pile");
+        art.style.backgroundImage = `url("${candy.boxImage}")`;
+      } else {
+        const image = document.createElement("img");
+        image.src = candy.image;
+        image.alt = "";
+        image.draggable = false;
+        art.append(image);
+      }
+      cell.append(art);
+    } else {
+      cell.classList.add("builder-cell--empty");
     }
-    const current = state.selections[candyId] || 0;
-    const total = getTotal();
-    if (delta > 0 && total >= state.capacity) {
-      store.notify("Бокс заполнен. Убери конфету или выбери бокс больше.");
-      return;
-    }
-    const next = Math.max(0, current + delta);
-    if (next) state.selections[candyId] = next;
-    else delete state.selections[candyId];
-    saveState();
-    updateCandyControls();
-    renderSummary();
+
+    const label = document.createElement("span");
+    label.className = isPercent ? "builder-cell__share" : "builder-cell__sign";
+    label.textContent = isPercent ? `${amount}%${candy ? "" : " свободно"}` : candy ? "−" : "+";
+    label.setAttribute("aria-hidden", candy || !isPercent ? "true" : "false");
+    cell.append(label);
+    return cell;
   }
 
   function renderCells() {
-    cells.replaceChildren();
-    cells.className = `mix-cells mix-cells--${state.capacity}`;
-    data.candies.forEach((candy) => {
-      const quantity = state.selections[candy.id] || 0;
-      for (let index = 0; index < quantity; index += 1) {
-        const cell = document.createElement("button");
-        cell.className = "mix-cell mix-cell--filled";
-        cell.type = "button";
-        cell.dataset.cellCandy = candy.id;
-        cell.title = `Убрать одну порцию «${candy.name}»`;
-        cell.setAttribute("aria-label", cell.title);
-        const image = document.createElement("img");
-        image.src = candy.boxImage || candy.image;
-        image.alt = "";
-        image.width = 90;
-        image.height = 90;
-        cell.append(image);
-        cells.append(cell);
+    const isPercent = state.mode === "percent";
+    const focusedId = cells.contains(document.activeElement) ? document.activeElement.dataset.cellCandy : null;
+    const focusedIndex = focusedId ? [...cells.children].indexOf(document.activeElement) : -1;
+    const entries = Object.entries(currentMix());
+    const total = sum(currentMix());
+    const children = [];
+    cells.style.removeProperty("grid-template-columns");
+    if (isPercent) {
+      for (const [id, amount] of entries) children.push(createCell(id, amount, true));
+      if (total < 100) children.push(createCell(null, 100 - total, true));
+      const columns = Math.min(4, Math.ceil(Math.sqrt(children.length)));
+      cells.style.setProperty("--tray-columns", columns);
+      cells.style.setProperty("--tray-rows", Math.ceil(children.length / columns));
+      if (children.length === 2) {
+        const firstShare = entries[0][1];
+        cells.style.gridTemplateColumns = `minmax(74px, ${firstShare}fr) minmax(74px, ${100 - firstShare}fr)`;
+      } else if (children.length % columns === 1) {
+        children.at(-1).style.gridColumn = "1 / -1";
       }
-    });
-    for (let index = getTotal(); index < state.capacity; index += 1) {
-      const cell = document.createElement("div");
-      cell.className = "mix-cell";
-      const plus = document.createElement("span");
-      plus.textContent = "+";
-      cell.append(plus);
-      cells.append(cell);
+    } else {
+      for (const [id, amount] of entries) {
+        for (let index = 0; index < amount; index += 1) children.push(createCell(id, 1, false));
+      }
+      for (let index = total; index < state.capacity; index += 1) children.push(createCell(null, 1, false));
+      const columns = state.capacity === 12 ? 4 : 6;
+      cells.style.setProperty("--tray-columns", columns);
+      cells.style.setProperty("--tray-rows", state.capacity / columns);
+    }
+    cells.classList.toggle("builder-cells--percent", isPercent);
+    cells.replaceChildren(...children);
+    if (focusedId) {
+      const replacement = children[focusedIndex]?.dataset.cellCandy === focusedId
+        ? children[focusedIndex]
+        : children.find((child) => child.dataset.cellCandy === focusedId) || plus;
+      (replacement.disabled ? boxToggle : replacement).focus({ preventScroll: true });
     }
   }
 
   function renderSummary() {
-    const total = getTotal();
-    const remaining = state.capacity - total;
-    document.querySelector("[data-mix-count]").textContent = total;
-    document.querySelector("[data-mix-capacity]").textContent = state.capacity;
-    document.querySelector("[data-mix-progress]").style.width = `${Math.min(100, total / state.capacity * 100)}%`;
-    document.querySelector("[data-mix-weight]").textContent = `${getWeight()} г`;
-    document.querySelector("[data-mix-price]").textContent = store.formatPrice(getPrice());
-    const hint = document.querySelector("[data-mix-hint]");
-    hint.textContent = remaining > 0
-      ? `Добавь ещё ${remaining} ${remaining === 1 ? "конфету" : remaining < 5 ? "конфеты" : "конфет"}, чтобы заполнить бокс.`
-      : "Бокс заполнен — можно добавлять в корзину!";
-    hint.classList.toggle("mix-summary__hint--ready", remaining === 0);
+    const isPercent = state.mode === "percent";
+    const total = sum(currentMix());
+    const remaining = limit() - total;
+    const totals = getTotals();
+
+    modes.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.mixMode === state.mode)));
+    capacityButtons.forEach((button) => button.setAttribute("aria-pressed", String(Number(button.dataset.capacity) === state.capacity)));
+    weightButtons.forEach((button) => button.setAttribute("aria-pressed", String(Number(button.dataset.weight) === state.weight)));
+    find("[data-piece-sizes]").hidden = isPercent;
+    find("[data-percent-sizes]").hidden = !isPercent;
+    find(`input[name="package"][value="${state.package}"]`).checked = true;
+    find("[data-box-hint]").textContent = isPercent
+      ? "Задай долю вкуса вручную или добавляй по 5%. Нажми на секцию, чтобы уменьшить долю."
+      : "Перетащи вкус в коробку или нажми «Добавить». Нажми на конфету, чтобы убрать её.";
+    const progress = find("[data-mix-progress]");
+    progress.max = limit();
+    progress.value = total;
+    find("[data-mix-progress-text]").textContent = isPercent ? formatAmount(total) : `${total} из ${state.capacity} шт.`;
+    find("[data-mix-hint]").textContent = remaining ? `Осталось добавить ${formatAmount(remaining)}` : "Коробка заполнена.";
+    find("[data-mix-weight]").textContent = `${isPercent ? "" : "≈ "}${totals.weight} г`;
+    find("[data-mix-price]").textContent = store.formatPrice(totals.price);
     addButton.disabled = remaining !== 0;
-    capacityButtons.forEach((button) => {
-      const active = Number(button.dataset.capacity) === state.capacity;
-      button.classList.toggle("capacity-picker__button--active", active);
-      button.setAttribute("aria-pressed", String(active));
-    });
-    document.querySelectorAll('input[name="package"]').forEach((input) => {
-      input.checked = input.value === state.package;
-    });
+    randomButton.disabled = remaining === 0;
+    resetButton.disabled = total === 0;
+    balanceButton.hidden = !isPercent;
+    balanceButton.disabled = total !== 0;
     renderCells();
   }
 
+  function refresh() {
+    saveState();
+    renderSelection();
+    renderSummary();
+  }
+
+  function toggleBox(open) {
+    isOpen = open;
+    tray.inert = !open;
+    box.classList.toggle("builder-box--closed", !open);
+    boxToggle.setAttribute("aria-expanded", String(open));
+    boxToggle.textContent = open ? "Закрыть коробку" : "Открыть коробку";
+  }
+
+  function randomItem(items) {
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
   grid.addEventListener("click", (event) => {
-    const plus = event.target.closest("[data-candy-plus]");
-    const minus = event.target.closest("[data-candy-minus]");
-    if (plus) {
-      changeCandy(plus.dataset.candyPlus, 1);
-      return;
+    const button = event.target.closest("[data-candy]");
+    if (!button) return;
+    selectedId = button.dataset.candy;
+    renderSelection();
+  });
+
+  find("[data-selected-details]").addEventListener("click", () => window.CandyDetails.open(selectedId));
+  plus.addEventListener("click", () => {
+    changeCandy(selectedId, step());
+    if (!isOpen) toggleBox(true);
+    if (plus.disabled && !minus.disabled) minus.focus({ preventScroll: true });
+  });
+  minus.addEventListener("click", () => {
+    changeCandy(selectedId, -step());
+    if (minus.disabled && !plus.disabled) plus.focus({ preventScroll: true });
+  });
+  percentInput.addEventListener("change", () => {
+    const before = currentMix()[selectedId] || 0;
+    setAmount(selectedId, percentInput.valueAsNumber);
+    percentInput.value = currentMix()[selectedId] || 0;
+    if (!isOpen && Number(percentInput.value) > before) toggleBox(true);
+  });
+  percentInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      percentInput.blur();
     }
-    if (minus) {
-      changeCandy(minus.dataset.candyMinus, -1);
-      return;
-    }
-    const card = event.target.closest("[data-candy-card]");
-    if (card) window.CandyDetails.open(card.dataset.candyCard);
   });
 
   grid.addEventListener("dragstart", (event) => {
-    const handle = event.target.closest("[data-candy-drag]");
-    if (!handle) return;
-    event.dataTransfer.setData("text/plain", handle.dataset.candyDrag);
+    const button = event.target.closest('[data-candy][draggable="true"]');
+    if (!button) return;
+    event.dataTransfer.setData("text/plain", button.dataset.candy);
     event.dataTransfer.effectAllowed = "copy";
-    dropzone.classList.add("open-box--ready");
+    if (!isOpen) toggleBox(true);
   });
-
-  grid.addEventListener("dragend", () => dropzone.classList.remove("open-box--ready"));
-  dropzone.addEventListener("dragover", (event) => {
+  grid.addEventListener("dragend", () => box.classList.remove("builder-box--over"));
+  box.addEventListener("dragover", (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
-    dropzone.classList.add("open-box--over");
+    box.classList.add("builder-box--over");
   });
-  dropzone.addEventListener("dragleave", (event) => {
-    if (!dropzone.contains(event.relatedTarget)) dropzone.classList.remove("open-box--over");
+  box.addEventListener("dragleave", (event) => {
+    if (!box.contains(event.relatedTarget)) box.classList.remove("builder-box--over");
   });
-  dropzone.addEventListener("drop", (event) => {
+  box.addEventListener("drop", (event) => {
     event.preventDefault();
-    dropzone.classList.remove("open-box--ready", "open-box--over");
-    changeCandy(event.dataTransfer.getData("text/plain"), 1);
+    box.classList.remove("builder-box--over");
+    changeCandy(event.dataTransfer.getData("text/plain"), step());
   });
 
   cells.addEventListener("click", (event) => {
     const cell = event.target.closest("[data-cell-candy]");
-    if (cell) changeCandy(cell.dataset.cellCandy, -1);
+    if (cell) changeCandy(cell.dataset.cellCandy, -step());
   });
+  boxToggle.addEventListener("click", () => toggleBox(!isOpen));
 
-  filterButtons.forEach((button) => {
+  for (const button of filterButtons) {
     button.addEventListener("click", () => {
       activeFilter = button.dataset.mixFilter;
-      filterButtons.forEach((item) => {
-        const active = item === button;
-        item.classList.toggle("filter-chip--active", active);
-        item.setAttribute("aria-pressed", String(active));
-      });
-      renderCandyCards();
+      filterButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+      renderCatalog();
     });
-  });
+  }
+  search.addEventListener("input", renderCatalog);
 
-  search.addEventListener("input", () => {
-    searchQuery = search.value;
-    renderCandyCards();
-  });
-
-  capacityButtons.forEach((button) => {
+  for (const button of modes) {
+    button.addEventListener("click", () => {
+      if (state.mode === button.dataset.mixMode) return;
+      state.mode = button.dataset.mixMode;
+      refresh();
+    });
+  }
+  for (const button of capacityButtons) {
     button.addEventListener("click", () => {
       const capacity = Number(button.dataset.capacity);
-      if (capacity < getTotal()) {
-        store.notify("В миксе больше конфет, чем ячеек в этом боксе. Сначала убери лишние.");
+      if (capacity < sum(state.selections)) {
+        store.notify("Сначала убери лишние конфеты из коробки.");
         return;
       }
       state.capacity = capacity;
-      saveState();
-      updateCandyControls();
-      renderSummary();
+      refresh();
     });
-  });
-
-  document.querySelectorAll('input[name="package"]').forEach((input) => {
+  }
+  for (const button of weightButtons) {
+    button.addEventListener("click", () => {
+      state.weight = Number(button.dataset.weight);
+      refresh();
+    });
+  }
+  for (const input of findAll('input[name="package"]')) {
     input.addEventListener("change", () => {
       state.package = input.value;
-      saveState();
-      renderSummary();
+      refresh();
     });
-  });
+  }
 
-  document.querySelector("[data-mix-random]").addEventListener("click", () => {
-    const available = data.candies.filter((candy) => candy.isAvailable);
-    let remaining = state.capacity - getTotal();
-    while (remaining > 0) {
-      const candy = available[Math.floor(Math.random() * available.length)];
-      state.selections[candy.id] = (state.selections[candy.id] || 0) + 1;
-      remaining -= 1;
+  const available = data.candies.filter((candy) => candy.isAvailable);
+  randomButton.addEventListener("click", () => {
+    const mix = currentMix();
+    const remaining = limit() - sum(mix);
+    if (!available.length || !remaining) return;
+    const count = state.mode === "percent" ? Math.min(4, remaining) : remaining;
+    const pool = [...available];
+    for (let index = 0; index < count; index += 1) {
+      const candy = randomItem(pool.length ? pool : available);
+      if (state.mode === "percent") pool.splice(pool.indexOf(candy), 1);
+      const amount = Math.floor(remaining / count) + (index < remaining % count ? 1 : 0);
+      mix[candy.id] = (mix[candy.id] || 0) + amount;
     }
-    saveState();
-    updateCandyControls();
-    renderSummary();
+    toggleBox(true);
+    refresh();
   });
 
-  document.querySelector("[data-mix-reset]").addEventListener("click", () => {
-    state.selections = {};
-    saveState();
-    updateCandyControls();
-    renderSummary();
+  balanceButton.addEventListener("click", () => {
+    const sour = randomItem(available.filter((candy) => candy.categories.includes("sour")));
+    const sweet = randomItem(available.filter((candy) => candy.id !== sour?.id && candy.categories.includes("sweet")));
+    if (!sour || !sweet) return;
+    state.shares = { [sour.id]: 50, [sweet.id]: 50 };
+    toggleBox(true);
+    refresh();
   });
 
+  function clearMix() {
+    if (state.mode === "percent") state.shares = {};
+    else state.selections = {};
+    refresh();
+  }
+
+  resetButton.addEventListener("click", clearMix);
   addButton.addEventListener("click", () => {
-    if (getTotal() !== state.capacity) return;
+    if (sum(currentMix()) !== limit()) return;
+    const isPercent = state.mode === "percent";
     store.addMix({
       name: "Мой сладкий микс",
-      capacity: state.capacity,
+      mode: state.mode,
+      ...(isPercent ? {} : { capacity: state.capacity }),
       package: state.package,
-      items: { ...state.selections },
-      price: getPrice(),
-      weight: getWeight(),
+      items: { ...currentMix() },
+      ...getTotals(),
     });
-    state.selections = {};
-    saveState();
-    updateCandyControls();
-    renderSummary();
+    clearMix();
   });
 
-  renderCandyCards();
+  renderCatalog();
   renderSummary();
 })();
