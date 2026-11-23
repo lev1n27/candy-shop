@@ -7,7 +7,27 @@
   let quantity = 1;
   let weight = 250;
 
-  document.title = `${set.name} — Сладкий мешок`;
+  const baseUrl = "https://lev1n27.github.io/candy-shop/";
+  const productTitle = `${set.name} — Сладкий мешок`;
+  const productUrl = `${baseUrl}product.html?id=${encodeURIComponent(set.id)}`;
+  const productImage = new URL(store.getCandy(set.candies[0]).image, baseUrl).href;
+  document.title = productTitle;
+  document.querySelector('link[rel="canonical"]').href = productUrl;
+  const metadata = [
+    ['meta[name="description"]', set.description],
+    ['meta[property="og:title"]', productTitle],
+    ['meta[property="og:description"]', set.description],
+    ['meta[property="og:url"]', productUrl],
+    ['meta[property="og:image"]', productImage],
+    ['meta[property="og:image:alt"]', set.name],
+    ['meta[name="twitter:title"]', productTitle],
+    ['meta[name="twitter:description"]', set.description],
+    ['meta[name="twitter:image"]', productImage],
+    ['meta[name="twitter:image:alt"]', set.name],
+  ];
+  metadata.forEach(([selector, content]) => {
+    document.querySelector(selector).setAttribute("content", content);
+  });
   document.querySelector("[data-product-breadcrumb]").textContent = set.name;
 
   const detail = document.createElement("div");

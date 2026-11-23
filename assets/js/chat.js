@@ -119,7 +119,10 @@
     sendMessage(input.value);
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !panel.hidden) setOpen(false);
+    if (event.key === "Escape" && !panel.hidden) {
+      setOpen(false);
+      launch.focus();
+    }
   });
 
   messages.forEach(addMessageElement);

@@ -4,6 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Корзина готовых наборов и собственных миксов мармелада.">
+  <meta name="robots" content="noindex, follow">
+  <meta name="author" content="Сладкий мешок">
+  <link rel="canonical" href="https://lev1n27.github.io/candy-shop/cart.html">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Сладкий мешок">
+  <meta property="og:title" content="Корзина сладостей — Сладкий мешок">
+  <meta property="og:description" content="Проверь выбранные наборы и миксы перед оформлением заказа.">
+  <meta property="og:url" content="https://lev1n27.github.io/candy-shop/cart.html">
+  <meta property="og:image" content="https://lev1n27.github.io/candy-shop/assets/images/candies/rings.webp">
+  <meta property="og:image:alt" content="Разноцветные мармеладные кольца">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Корзина сладостей — Сладкий мешок">
+  <meta name="twitter:description" content="Проверь выбранные наборы и миксы перед оформлением заказа.">
+  <meta name="twitter:image" content="https://lev1n27.github.io/candy-shop/assets/images/candies/rings.webp">
+  <meta name="twitter:image:alt" content="Разноцветные мармеладные кольца">
   <meta name="theme-color" content="#f7f5eb">
   <title>Корзина — Сладкий мешок</title>
   <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
@@ -15,6 +31,7 @@
   <script src="assets/js/cart.js" defer></script>
 </head>
 <body id="page-top" tabindex="-1">
+  <a class="skip-link" href="#main">Перейти к основному содержимому</a>
   <div class="announcement">Бесплатная доставка по Москве от 2 500 ₽</div>
   <header class="site-header"><div class="container site-header__row">
     <a class="logo" href="index.html" aria-label="Сладкий мешок — на главную"><span class="logo__mark" aria-hidden="true"><i></i></span><span class="logo__text">Сладкий <span>мешок</span></span></a>
@@ -23,7 +40,7 @@
     <a class="cart-link cart-link--active" href="cart.html" aria-label="Перейти в корзину" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6M9 20h.01M17 20h.01"/></svg><span>Корзина</span><b class="cart-count" data-cart-count hidden>0</b></a>
   </div></header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <nav class="container breadcrumbs" aria-label="Хлебные крошки">
       <ol><li><a href="index.html">Главная</a></li><li aria-current="page">Корзина</li></ol>
     </nav>
@@ -38,6 +55,8 @@
 
         <form class="checkout" id="checkout-form" novalidate>
           <div class="section-heading"><div><p class="eyebrow">Контактные данные</p><h2>Кому везём сладости?</h2></div></div>
+          <p class="form-note">Поля, отмеченные звёздочкой, обязательны для заполнения.</p>
+          <p class="form-error" data-checkout-error role="alert" hidden></p>
           <div class="checkout__grid">
             <label class="field"><span>Имя *</span><input type="text" name="name" placeholder="Как к вам обращаться" minlength="2" autocomplete="given-name" required></label>
             <label class="field"><span>Телефон *</span><input type="tel" name="phone" placeholder="+7 (999) 000-00-00" minlength="10" autocomplete="tel" required></label>
@@ -59,10 +78,6 @@
       <div class="site-footer__brand">
         <a class="logo logo--footer" href="index.html"><span class="logo__mark" aria-hidden="true"><i></i></span><span class="logo__text">Сладкий <span>мешок</span></span></a>
         <p class="site-footer__text">Готовые наборы и мармеладные миксы.</p>
-        <div class="site-footer__socials" role="group" aria-label="Социальные сети">
-          <svg viewBox="0 0 24 24" role="img" aria-label="ВКонтакте"><path fill="currentColor" d="M2 5h3.5c.2 5 2.2 8.1 4.6 9V5h3.4v5.2c2.3-.2 4.4-2.7 5.2-5.2h3.4c-.6 2.8-2.6 5.1-4.2 6.1 1.8.9 3.9 3.1 4.8 5.9H19c-.8-2.4-2.7-4.2-5.5-4.5V17H13C6.1 17 2.1 12.4 2 5Z"/></svg>
-          <svg viewBox="0 0 24 24" role="img" aria-label="Telegram"><path fill="currentColor" d="m2.4 11.1 17.5-6.8c.8-.3 1.4.2 1.2 1l-3 14c-.2 1-1 1.3-1.8.7l-4.7-3.5-2.3 2.2c-.3.3-.7.2-.7-.3l.4-4.1 8.2-7c.3-.3 0-.4-.3-.2L6.8 13.4l-4.3-1.3c-.9-.3-.9-.7-.1-1Z"/></svg>
-        </div>
       </div>
       <nav class="site-footer__links" aria-label="Покупателям">
         <h2>Покупателям</h2>
@@ -79,6 +94,10 @@
           <a href="mailto:hello@sweetbag.ru">hello@sweetbag.ru</a>
         </div>
         <p class="site-footer__hours">Ежедневно, 10:00–21:00</p>
+        <div class="site-footer__socials" role="group" aria-label="Социальные сети">
+          <svg viewBox="0 0 24 24" role="img" aria-label="ВКонтакте"><path fill="currentColor" d="M2 5h3.5c.2 5 2.2 8.1 4.6 9V5h3.4v5.2c2.3-.2 4.4-2.7 5.2-5.2h3.4c-.6 2.8-2.6 5.1-4.2 6.1 1.8.9 3.9 3.1 4.8 5.9H19c-.8-2.4-2.7-4.2-5.5-4.5V17H13C6.1 17 2.1 12.4 2 5Z"/></svg>
+          <svg viewBox="0 0 24 24" role="img" aria-label="Telegram"><path fill="currentColor" d="m2.4 11.1 17.5-6.8c.8-.3 1.4.2 1.2 1l-3 14c-.2 1-1 1.3-1.8.7l-4.7-3.5-2.3 2.2c-.3.3-.7.2-.7-.3l.4-4.1 8.2-7c.3-.3 0-.4-.3-.2L6.8 13.4l-4.3-1.3c-.9-.3-.9-.7-.1-1Z"/></svg>
+        </div>
       </div>
     </div>
     <div class="container site-footer__bottom"><span>© 2026 Сладкий мешок. Все права защищены.</span></div>

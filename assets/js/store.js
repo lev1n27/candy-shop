@@ -197,20 +197,22 @@
   const menuButton = document.querySelector("[data-menu-toggle]");
   const menu = document.querySelector("[data-menu]");
   if (menuButton && menu) {
-    const closeMenu = () => {
-      menu.classList.remove("site-nav--open");
-      menuButton.setAttribute("aria-expanded", "false");
-      document.body.classList.remove("menu-open");
+    const menuLabel = menuButton.querySelector(".sr-only");
+    const setMenuOpen = (open, restoreFocus = false) => {
+      menu.classList.toggle("site-nav--open", open);
+      menuButton.setAttribute("aria-expanded", String(open));
+      menuLabel.textContent = open ? "Закрыть меню" : "Открыть меню";
+      document.body.classList.toggle("menu-open", open);
+      if (restoreFocus) menuButton.focus();
     };
     menuButton.addEventListener("click", () => {
-      const isOpen = menuButton.getAttribute("aria-expanded") === "true";
-      menuButton.setAttribute("aria-expanded", String(!isOpen));
-      menu.classList.toggle("site-nav--open", !isOpen);
-      document.body.classList.toggle("menu-open", !isOpen);
+      setMenuOpen(menuButton.getAttribute("aria-expanded") !== "true");
     });
-    menu.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
+    menu.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setMenuOpen(false)));
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeMenu();
+      if (event.key === "Escape" && menuButton.getAttribute("aria-expanded") === "true") {
+        setMenuOpen(false, true);
+      }
     });
   }
 
