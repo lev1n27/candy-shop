@@ -167,6 +167,7 @@
     if (!candy) return;
 
     if (selectedImage.getAttribute("src") !== candy.image) selectedImage.src = candy.image;
+    selectedImage.alt = candy.name;
     selectedName.textContent = candy.name;
     selectedFlavor.textContent = candy.isAvailable ? candy.flavor : "Нет в наличии";
     const amount = mix[selectedId] || 0;

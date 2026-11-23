@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://lev1n27.github.io/candy-shop/sitemap.txt

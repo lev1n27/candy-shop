@@ -1,0 +1,12 @@
+https://lev1n27.github.io/candy-shop/
+https://lev1n27.github.io/candy-shop/catalog.html
+https://lev1n27.github.io/candy-shop/mix.html
+https://lev1n27.github.io/candy-shop/about.html
+https://lev1n27.github.io/candy-shop/product.html?id=berry-party
+https://lev1n27.github.io/candy-shop/product.html?id=sour-punch
+https://lev1n27.github.io/candy-shop/product.html?id=fruit-garden
+https://lev1n27.github.io/candy-shop/product.html?id=bear-party
+https://lev1n27.github.io/candy-shop/product.html?id=rainbow
+https://lev1n27.github.io/candy-shop/product.html?id=cola-company
+https://lev1n27.github.io/candy-shop/product.html?id=tender
+https://lev1n27.github.io/candy-shop/product.html?id=citrus
