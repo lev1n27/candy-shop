@@ -897,6 +897,10 @@ summary:focus-visible {
   text-decoration: underline;
 }
 
+.site-footer__socials {
+  margin-top: 16px;
+}
+
 .site-footer__socials,
 .site-footer__contact-actions {
   display: flex;
