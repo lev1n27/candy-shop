@@ -1,4 +1,20 @@
 (() => {
+  const mobileHeaderOrder = document.createElement("style");
+  mobileHeaderOrder.textContent = `
+    @media (max-width: 860px) {
+      .site-header__row > .cart-link {
+        order: 1;
+        margin-left: auto;
+      }
+
+      .site-header__row > .menu-toggle {
+        order: 2;
+        margin-left: 0;
+      }
+    }
+  `;
+  document.head.append(mobileHeaderOrder);
+
   const backToTop = document.createElement("a");
   backToTop.className = "back-to-top";
   backToTop.href = "#page-top";
