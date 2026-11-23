@@ -185,10 +185,12 @@
     });
   });
 
+  const checkoutError = checkoutForm.querySelector("[data-checkout-error]");
   checkoutForm.querySelectorAll("input, textarea").forEach((field) => {
     field.addEventListener("input", () => {
       field.removeAttribute("aria-invalid");
       field.setCustomValidity("");
+      checkoutError.hidden = true;
     });
   });
 
@@ -216,9 +218,12 @@
       field.setAttribute("aria-invalid", String(!field.checkValidity()));
     });
     if (!checkoutForm.checkValidity()) {
+      checkoutError.textContent = "Проверь обязательные поля и введи полный номер телефона.";
+      checkoutError.hidden = false;
       checkoutForm.reportValidity();
       return;
     }
+    checkoutError.hidden = true;
 
     const name = checkoutForm.elements.name.value.trim();
     const orderNumber = `СМ-${String(Date.now()).slice(-6)}`;

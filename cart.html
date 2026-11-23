@@ -15,6 +15,7 @@
   <script src="assets/js/cart.js" defer></script>
 </head>
 <body id="page-top" tabindex="-1">
+  <a class="skip-link" href="#main">Перейти к основному содержимому</a>
   <div class="announcement">Бесплатная доставка по Москве от 2 500 ₽</div>
   <header class="site-header"><div class="container site-header__row">
     <a class="logo" href="index.html" aria-label="Сладкий мешок — на главную"><span class="logo__mark" aria-hidden="true"><i></i></span><span class="logo__text">Сладкий <span>мешок</span></span></a>
@@ -23,7 +24,7 @@
     <a class="cart-link cart-link--active" href="cart.html" aria-label="Перейти в корзину" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6M9 20h.01M17 20h.01"/></svg><span>Корзина</span><b class="cart-count" data-cart-count hidden>0</b></a>
   </div></header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <nav class="container breadcrumbs" aria-label="Хлебные крошки">
       <ol><li><a href="index.html">Главная</a></li><li aria-current="page">Корзина</li></ol>
     </nav>
@@ -38,6 +39,8 @@
 
         <form class="checkout" id="checkout-form" novalidate>
           <div class="section-heading"><div><p class="eyebrow">Контактные данные</p><h2>Кому везём сладости?</h2></div></div>
+          <p class="form-note">Поля, отмеченные звёздочкой, обязательны для заполнения.</p>
+          <p class="form-error" data-checkout-error role="alert" hidden></p>
           <div class="checkout__grid">
             <label class="field"><span>Имя *</span><input type="text" name="name" placeholder="Как к вам обращаться" minlength="2" autocomplete="given-name" required></label>
             <label class="field"><span>Телефон *</span><input type="tel" name="phone" placeholder="+7 (999) 000-00-00" minlength="10" autocomplete="tel" required></label>

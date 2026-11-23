@@ -37,7 +37,7 @@
     return items.map(([label, value]) => `
       <div class="taste-meter">
         <span>${label}</span>
-        <div class="taste-meter__dots" aria-label="${label}: ${value} из 5">
+        <div class="taste-meter__dots" role="img" aria-label="${label}: ${value} из 5">
           ${Array.from({ length: 5 }, (_, index) => `<i class="${index < value ? "taste-meter__dot--filled" : ""}"></i>`).join("")}
         </div>
       </div>
