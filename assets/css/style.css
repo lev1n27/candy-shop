@@ -610,18 +610,32 @@ textarea:focus-visible {
   height: 115px;
   object-fit: contain;
   filter: drop-shadow(5px 9px 0 rgba(66, 27, 53, 0.12));
+  transform: rotate(var(--float-rotation));
+  animation: hero-float 4s ease-in-out infinite;
 }
 
 .hero-visual__floating--one {
+  --float-rotation: -16deg;
   bottom: 10px;
   left: 0;
-  transform: rotate(-16deg);
 }
 
 .hero-visual__floating--two {
+  --float-rotation: 12deg;
   top: 30px;
   left: 0;
-  transform: rotate(12deg);
+  animation-delay: -2s;
+}
+
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0) rotate(var(--float-rotation)); }
+  50% { transform: translateY(-14px) rotate(var(--float-rotation)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-visual__floating {
+    animation: none;
+  }
 }
 
 .section-heading {
@@ -1108,7 +1122,7 @@ textarea:focus-visible {
 }
 
 .product-detail__media {
-  position: sticky;
+  position: static;
   top: 25px;
 }
 
@@ -4122,18 +4136,6 @@ button.builder-cell:focus-visible .builder-cell__sign {
 .back-to-top:hover {
   background: var(--green-hover);
   transform: translateY(-2px);
-}
-
-@media (min-width: 1000px) and (min-height: 700px) and (prefers-reduced-motion: no-preference) {
-  html:has([data-screen-flow]) {
-    scroll-snap-type: y proximity;
-  }
-
-  body:has([data-screen-flow]) > .announcement,
-  .page-screen:not(:first-child),
-  body:has([data-screen-flow]) > .site-footer {
-    scroll-snap-align: start;
-  }
 }
 
 @media (max-width: 860px) {
